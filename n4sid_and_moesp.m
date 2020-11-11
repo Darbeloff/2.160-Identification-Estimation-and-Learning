@@ -53,7 +53,7 @@ end
 % an approximate system order when using these algorithms. Try out different system
 % orders, and discuss the results.
 data = iddata(y,u,1);
-for nx = 1:5
+for nx = 1:4
     % N4SID
     sys_n4sid = n4sid(data,nx);
     figure
@@ -94,3 +94,9 @@ end
 % system with system matrices, A, B, C, and D, obtain a 2 by 2 transfer matrix representing
 % the input-output relationship of the system in part b) and compare it to the transfer
 % function associated with the system in part a).
+syms q
+transfer_matrix = @(A,B,C,D) C*inv(q*eye(size(A))-A)*B+D;
+
+tm_a = transfer_matrix(A,B,C,D)
+tm_n4sid = transfer_matrix(sys_n4sid.A,sys_n4sid.B,sys_n4sid.C,sys_n4sid.D)
+tm_moesp = transfer_matrix(a,b,c,d)
