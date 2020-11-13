@@ -55,7 +55,7 @@ end
 data = iddata(y,u,1);
 for nx = 1:4
     % N4SID
-    sys_n4sid = n4sid(data,nx);
+    sys_n4sid = n4sid(data,nx, 'Ts',1, 'Feedthrough',1, 'DisturbanceModel','None');
     figure
     for iu=1:DIM_U
         [m,p,w] = dbode(sys_n4sid.A,sys_n4sid.B,sys_n4sid.C,sys_n4sid.D,1,iu);
