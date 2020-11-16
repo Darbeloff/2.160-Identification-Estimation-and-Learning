@@ -39,7 +39,7 @@ def train_model(model1, model2, x, y):
 	# the model for us. Here we will use Adam; the optim package contains many other
 	# optimization algorithms. The first argument to the Adam constructor tells the
 	# optimizer which Tensors it should update.
-	learning_rate = .001
+	learning_rate = .0001
 	n_epochs = 10000
 	training_losses = []
 	validation_losses = []
@@ -98,7 +98,9 @@ def train_model(model1, model2, x, y):
 	model.eval()
 	return model
 
-def robot_kinematic_model(q1, q2, dl1, dl2, dq1, dq2, dx1, dx2): # Eq. 3
+torch.manual_seed(3)
+dl1, dl2, dq1, dq2, dx1, dx2 = [d for d in (torch.rand(6)-0.5)/10]
+def robot_kinematic_model(q1, q2): # Eq. 3
 	x1 = (1+dl1)*torch.cos(q1+dq1)+(1+dl2)*torch.cos(q2+dq2)+dx1
 	x2 = (1+dl1)*torch.sin(q1+dq1)+(1+dl2)*torch.sin(q2+dq2)+dx2
 	return x1, x2
@@ -106,30 +108,18 @@ def robot_kinematic_model(q1, q2, dl1, dl2, dq1, dq2, dx1, dx2): # Eq. 3
 if __name__ == '__main__':
 	device = 'cuda' if torch.cuda.is_available() else 'cpu'
 	dtype = torch.FloatTensor
-	torch.manual_seed(4)
 
-	M, H, D_in, D_out = 10000, 4, 8, 2
+	H, D_in, D_out = 4, 2, 2
 	NN1 = torch.nn.Sequential( # Eq. 2
 		torch.nn.Linear(D_in, H),
 		torch.nn.ReLU(),
 		torch.nn.Linear(H, D_out),
 	)
-	NN2 = torch.nn.Sequential( # Eq. 2
-		torch.nn.Linear(2, H),
-		torch.nn.ReLU(),
-		torch.nn.Linear(H, D_out),
-	)
+	NN2 = copy.deepcopy(NN1)
 	NN2.load_state_dict(torch.load('NN2.pt'))
 
-	q = torch.rand(M, 2)*2*3.14
-	dl1 = (torch.rand(M,1)-0.5)/10
-	dl2 = (torch.rand(M,1)-0.5)/10
-	dq1 = (torch.rand(M,1)-0.5)/10
-	dq2 = (torch.rand(M,1)-0.5)/10
-	dx1 = (torch.rand(M,1)-0.5)/10
-	dx2 = (torch.rand(M,1)-0.5)/10
-	x1, x2 = robot_kinematic_model(q[:,0][:,None], q[:,1][:,None], dl1,dl2,dq1,dq2,dx1,dx2)
-	x = torch.cat((x1, x2), 1)
-	# breakpoint()
-	NN_comb = train_model(NN1, NN2, torch.cat((x,dl1,dl2,dq1,dq2,dx1,dx2),1), q)
-	torch.save(NN_comb.state_dict(), 'NN_comb_i.pt')
+	q = torch.rand(10000, D_in)*2*3.14
+	x1, x2 = robot_kinematic_model(q[:,0], q[:,1])
+	x = torch.cat((x1[:,None], x2[:,None]), 1)
+
+	NN_comb = train_model(NN1, NN2, x, x)
